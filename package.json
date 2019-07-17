@@ -1,0 +1,38 @@
+{
+  "name": "FitbitWebApiSample",
+  "version": "0.0.1",
+  "private": true,
+  "scripts": {
+    "start": "node node_modules/react-native/local-cli/cli.js start",
+    "test": "jest",
+    "clean": "rimraf '{build,.jest,ios/build,android/build}'",
+    "clean:all": "yarn clean && rimraf {node_modules,./gems,ios/Pods,android/.gradle}",
+    "fastlane": "export LC_CTYPE=en_US.UTF-8 LC_ALL=en_US.UTF-8 LANG=en_US.UTF-8 && bundle exec fastlane",
+    "nodeify": "rn-nodeify --install net,process,util,stream --hack",
+    "postinstall": "bundle install && butler patch && yarn remotedev && yarn nodeify",
+    "prepare:all": "yarn prepare:ios && yarn prepare:android",
+    "prepare:ios": "yarn fastlane ios prepare",
+    "prepare:android": "yarn fastlane android prepare",
+    "purge": "yarn clean:all && yarn && yarn prepare:all",
+    "bundle": "react-native bundle --platform android --dev false --entry-file index.js --bundle-output android/app/src/main/assets/index.android.bundle --assets-dest android/app/src/main/res"
+  },
+  "dependencies": {
+    "qs": "^6.7.0",
+    "react": "16.6.0-alpha.8af6728",
+    "react-native": "0.57.2",
+    "react-native-gesture-handler": "^1.3.0",
+    "react-native-inappbrowser-reborn": "^2.0.4",
+    "react-navigation": "^3.11.0",
+    "reactotron-react-native": "^3.6.4",
+    "schedule": "0.4.0"
+  },
+  "devDependencies": {
+    "babel-jest": "24.8.0",
+    "jest": "24.8.0",
+    "metro-react-native-babel-preset": "0.55.0",
+    "react-test-renderer": "16.6.0-alpha.8af6728"
+  },
+  "jest": {
+    "preset": "react-native"
+  }
+}
