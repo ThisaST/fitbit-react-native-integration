@@ -27,7 +27,8 @@ type Props = {
 };
 
 type State = {
-  url: string
+  url: string,
+  accessToken : string
 };
 
 function getParameterByName(name, url) {
@@ -47,7 +48,8 @@ const fetchData = async (url: string, method: string) => {
       Authorization: "Basic " + base64Encoding(),
       "Content-Type": "application/x-www-form-urlencoded"
     }
-  });
+  }).then(res => res.json())
+  .then(data => console.log(data));
   console.log(res);
   return res;
 };
@@ -62,7 +64,8 @@ export default class App extends Component<Props, State> {
 
     this.state = {
       url:
-        "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22DMN8&redirect_uri=myfitapp://demo/home/&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight"
+        "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22DMN8&redirect_uri=myfitapp://demo/home/&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight",
+        accessToken : ""
     };
   }
 
@@ -81,7 +84,6 @@ export default class App extends Component<Props, State> {
           code;
         console.log(fetchAccessTokenUrl);
         const data = fetchData(fetchAccessTokenUrl, "POST");
-        console.log(data);
       });
     } else {
       Linking.addEventListener("url", this.handleOpenURL);
