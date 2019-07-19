@@ -30,38 +30,31 @@ type State = {
   url: string
 };
 
-//from github
-function OAuth(client_id) {
-  // Listen to redirection
-  Linking.addEventListener("url", handleUrl);
-  function handleUrl(event) {
-    console.log("handleUrl")
-    console.log(event.url);
-    Linking.removeEventListener("url", handleUrl);
-    const [, query_string] = event.url.match(/\#(.*)/);
-    console.log(query_string);
-
-    const query = qs.parse(query_string);
-    console.log(`query: ${JSON.stringify(query)}`);
-  }
-
-  // Call OAuth
-  const oauthurl =
-    "https://www.fitbit.com/oauth2/authorize?" +
-    qs.stringify({
-      client_id,
-      response_type: "code",
-      scope: "heartrate activity activity profile sleep",
-      redirect_uri: "myfitapp://demo/home",
-      expires_in: "31536000"
-      //state,
-    });
-  console.log(oauthurl);
-  Linking.openURL(oauthurl).catch(err =>
-    console.error("Error processing linking", err)
-  );
+function getParameterByName(name, url) {
+  if (!url) url = window.location.href;
+  name = name.replace(/[\[\]]/g, "\\$&");
+  var regex = new RegExp("[?&]" + name + "(=([^&#]*)|&|#|$)"),
+    results = regex.exec(url);
+  if (!results) return null;
+  if (!results[2]) return "";
+  return decodeURIComponent(results[2].replace(/\+/g, " "));
 }
 
+const fetchData = async (url: string, method: string) => {
+  const res = await fetch(url, {
+    method,
+    headers: {
+      Authorization: "Basic " + base64Encoding(),
+      "Content-Type": "application/x-www-form-urlencoded"
+    }
+  });
+  console.log(res);
+  return res;
+};
+
+const base64Encoding = () => {
+  return btoa(config.client_id + ":" + config.client_secret);
+};
 
 export default class App extends Component<Props, State> {
   constructor(props: any) {
@@ -80,16 +73,22 @@ export default class App extends Component<Props, State> {
   componentDidMount() {
     if (Platform.OS === "android") {
       Linking.getInitialURL().then(url => {
-        this.navigate(url);
+        console.log(url);
+        const code = getParameterByName("code", url);
+        console.log(code);
+        const fetchAccessTokenUrl =
+          "https://api.fitbit.com/oauth2/token?client_id=22DMN8&redirect_uri=myfitapp://demo/home&grant_type=authorization_code&code=" +
+          code;
+        console.log(fetchAccessTokenUrl);
+        const data = fetchData(fetchAccessTokenUrl, "POST");
+        console.log(data);
       });
     } else {
       Linking.addEventListener("url", this.handleOpenURL);
     }
   }
 
-  componentWillUnmount() {
-    Linking.removeEventListener("url", this.handleOpenURL);
-  }
+  componentWillUnmount() {}
 
   handleOpenURL = (event: any) => {
     this.navigate(event.url);
@@ -147,7 +146,7 @@ export default class App extends Component<Props, State> {
     }
   }
 
-  getDeepLink(path = "") {
+  getDeepLink(path: string = "") {
     const scheme = "myfitapp";
     const prefix =
       Platform.OS === "android" ? `${scheme}://demo/` : `${scheme}://`;
@@ -157,38 +156,31 @@ export default class App extends Component<Props, State> {
   async tryDeepLinking() {
     const redirectUrl = this.getDeepLink("home");
 
-    OAuth(config.client_id)
+    const rediUrl =
+      "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22DMN8&redirect_uri=myfitapp://demo/home&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight&prompt=login%20consent";
 
-    // const rediUrl =
-    //   "https://www.fitbit.com/oauth2/authorize?response_type=code&client_id=22DMN8&redirect_uri=myfitapp://demo/home&scope=activity%20nutrition%20heartrate%20location%20nutrition%20profile%20settings%20sleep%20social%20weight&prompt=login%20consent";
-
-    // try {
-    //   if (await InAppBrowser.isAvailable()) {
-    //     // const result = await InAppBrowser.openAuth(url, rediUrl);
-    //     // await this.sleep(500);
-    //     console.log(redirectUrl);
-    //     // console.log(result);
-    //     // console.log(result.url)
-    //     // Alert.alert("Response", JSON.stringify(result));
-    //     InAppBrowser.openAuth(rediUrl, redirectUrl, {
-    //       // iOS Properties
-    //       dismissButtonStyle: "cancel",
-    //       // Android Properties
-    //       showTitle: false,
-    //       enableUrlBarHiding: true,
-    //       enableDefaultShare: true
-    //     }).then(response => {
-    //       console.log(response.url);
-    //       if (response.type === "success" && response.url) {
-    //         Linking.openURL(response.url);
-    //       }
-    //     });
-    //   } else {
-    //     Alert.alert("Error!!!");
-    //   }
-    // } catch (error) {
-    //   Alert.alert("Error, could not open custom tab");
-    // }
+    try {
+      if (await InAppBrowser.isAvailable()) {
+        console.log(redirectUrl);
+        InAppBrowser.openAuth(rediUrl, redirectUrl, {
+          // iOS Properties
+          dismissButtonStyle: "cancel",
+          // Android Properties
+          showTitle: false,
+          enableUrlBarHiding: true,
+          enableDefaultShare: true
+        }).then(response => {
+          console.log(response);
+          if (response.type === "success" && response.url) {
+            Linking.openURL(response.url);
+          }
+        });
+      } else {
+        Alert.alert("Error!!!");
+      }
+    } catch (error) {
+      Alert.alert("Error, could not open custom tab");
+    }
   }
 
   render() {
